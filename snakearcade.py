@@ -13,10 +13,19 @@ class Snake:
         self.dy = dy
     
     def move(self): 
-        prevSeg = 
+        prevSeg = Segment(0,0,0,0)
         for i in range(len(self.segments)):
-            self.segments[i].move()
-    
+            currentSeg = self.segments[i]
+            if i == 0:
+                currentSeg.rect.x = self.x + dx
+                currentSeg.rect.y = self.y + dy
+            else:
+                prevSeg = self.segments[i-1]
+                currentSeg.rect.x = prevSeg.rect.x
+                currentSeg.rect.y = prevSeg.rect.y
+                currentSeg.dx = prevSeg.dx
+                currentSeg.dy = prevSeg.dy
+          
     def changeDir(self,direction):
         if(direction == "UP"):
             self.segments[0].dx = 0
@@ -38,8 +47,9 @@ class Snake:
             self.segments[0].rect.y = self.y
             self.segments[0].dx = self.dx
             self.segments[0].dy = self.dy
-            
-            
+        else:
+            segment.rect.x = self.segments[len(self.segments)-2].rect.x - self.segments[len(self.segments)-2].dx
+            segment.rect.y = self.segments[len(self.segments)-2].rect.y - self.segments[len(self.segments)-2].dy
         
 class Segment(pygame.sprite.Sprite):
     def __init__(self):
