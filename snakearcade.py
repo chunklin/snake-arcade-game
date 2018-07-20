@@ -1,5 +1,6 @@
-import sys,os,pygame,random,math
+import sys,os,pygame,random,math,numpy,pygame.time
 #Globals
+speed = 20
 size = 15
 spacing = 2
 KEY = {"UP":1,"DOWN":2,"LEFT":3,"RIGHT":4}
@@ -11,46 +12,67 @@ class Snake:
         self.y = y
         self.dx = dx
         self.dy = dy
+        self.isAlive = True
     
     def move(self): 
-        prevSeg = Segment(0,0,0,0)
-        for i in range(len(self.segments)):
+        #starting from the last segment, they replace the one in front
+        for i in range(len(self.segments)-1, 0, -1):
             currentSeg = self.segments[i]
-            if i == 0:
-                currentSeg.rect.x = self.x + dx
-                currentSeg.rect.y = self.y + dy
-            else:
-                prevSeg = self.segments[i-1]
-                currentSeg.rect.x = prevSeg.rect.x
-                currentSeg.rect.y = prevSeg.rect.y
-                currentSeg.dx = prevSeg.dx
-                currentSeg.dy = prevSeg.dy
+            prevSeg = self.segments[i-1]
+            currentSeg.rect.x = prevSeg.rect.x 
+            currentSeg.rect.y = prevSeg.rect.y 
+            currentSeg.dx = prevSeg.dx
+            currentSeg.dy = prevSeg.dy
+        #last, moves the head
+        self.segments[0].move()
           
     def changeDir(self,direction):
-        if(direction == "UP"):
-            self.segments[0].dx = 0
-            self.segments[0].dy = -10
-        elif(direction == "DOWN"):
-            self.segments[0].dx = 0
-            self.segments[0].dy = 10
-        elif(direction == "RIGHT"):
-            self.segments[0].dx = 10
-            self.segments[0].dy= 0
-        else:
-            self.segments[0].dx = -10
-            self.segments[0].dy = 0  
+        #changes directional velocity based on key inputs
+        if(len(self.segments)>1 and self.segments[0].rect.x - self.segments[0].dx == self.segments[1].rect.x):
+            if(direction == "UP" and self.segments[0].dy != speed):
+                self.segments[0].dx = 0
+                self.segments[0].dy = -speed
+            elif(direction == "DOWN" and self.segments[0].dy != -speed):
+                self.segments[0].dx = 0
+                self.segments[0].dy = speed
+            elif(direction == "RIGHT" and self.segments[0].dx != -speed):
+                self.segments[0].dx = speed
+                self.segments[0].dy= 0
+            elif(direction == "LEFT" and self.segments[0].dx != speed):
+                self.segments[0].dx = -speed
+                self.segments[0].dy = 0  
+        elif(len(self.segments) == 1):
+            if(direction == "UP"):
+                self.segments[0].dx = 0
+                self.segments[0].dy = -speed
+            elif(direction == "DOWN"):
+                self.segments[0].dx = 0
+                self.segments[0].dy = speed
+            elif(direction == "RIGHT"):
+                self.segments[0].dx = speed
+                self.segments[0].dy= 0
+            elif(direction == "LEFT"):
+                self.segments[0].dx = -speed
+                self.segments[0].dy = 0              
             
     def addSeg(self, segment):
-        self.segments.append(segment)
-        if len(self.segments) == 1:
+        #if there are no segments yet, add the head first
+        if len(self.segments) == 0:
+            self.segments.append(segment)
             self.segments[0].rect.x = self.x
             self.segments[0].rect.y = self.y
             self.segments[0].dx = self.dx
             self.segments[0].dy = self.dy
+        #the new segment takes the place of the last segment
         else:
-            segment.rect.x = self.segments[len(self.segments)-2].rect.x - self.segments[len(self.segments)-2].dx
-            segment.rect.y = self.segments[len(self.segments)-2].rect.y - self.segments[len(self.segments)-2].dy
-        
+            segment.rect.x = self.segments[-1].rect.x
+            segment.rect.y = self.segments[-1].rect.y
+            self.segments.append(segment)
+    def killSnake(self):
+        for segment in self.segments:
+            segment.kill()
+        self.isAlive = False
+
 class Segment(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -72,7 +94,7 @@ class App:
     def __init__(self):
         self.running = True
         self.screen = None
-        self.size = self.width, self.height = 600, 600
+        self.size = self.width, self.height = 1000,1000
 
 
     def on_init(self):
@@ -82,7 +104,7 @@ class App:
         self.running = True
 
         # A surface is a solid colored box. In this case it is green.
-        self.bgImg = pygame.Surface((600,600))
+        self.bgImg = pygame.Surface((1000,1000))
         self.bgImg.fill((128,128,128))
         # blit displays it on the screen (actually in the buffer).
         self.screen.blit(self.bgImg,(0,0))
@@ -93,20 +115,35 @@ class App:
         # provide the ability to draw sprites on the screen and other management of
         # sprites.
         self.sprites = pygame.sprite.RenderUpdates()
-
+        self.head = pygame.sprite.RenderUpdates()
+        self.food = pygame.sprite.RenderUpdates()
         # The ball is one of the sprites. The self.balls list is the list of balls
         # bouncing on the screen.
-        self.snake = Snake(300,300,0,0)
+        self.snake = Snake(500,500,.1,.1)
         segment = Segment()
         self.snake.addSeg(segment)
-        self.sprites.add(segment)
+        self.head.add(segment)
         
         return True
     
     def on_loop(self):
         # The on_loop is called below in the on_execute. This handles the changes
         # to the model of this program. It does not do any drawing.
-        self.snake.move()
+        if(self.snake.isAlive):
+            self.snake.move()
+            if self.snake.segments[0].rect.x>1000 or self.snake.segments[0].rect.x <0 or self.snake.segments[0].rect.y >1000 or self.snake.segments[0].rect.y < 0:
+                self.snake.killSnake()           
+            colliding = pygame.sprite.spritecollideany(self.snake.segments[0], self.sprites)
+            
+            if colliding != self.snake.segments[0] and colliding != None:
+                self.snake.killSnake()
+            #colliding = pygame.sprite.spritecollideany(self.snake.segments[0], self.food)
+            #if colliding != None:
+                #for i in range(3):
+                    #segment = Segment()
+                    #self.snake.addSeg(segment)
+                    #self.sprites.add(segment)
+            
             
     
     def on_render(self):
@@ -115,9 +152,13 @@ class App:
         # These next lines clear each sprite from the screen by redrawing
         # the background behind that sprite.
         self.sprites.clear(self.screen,self.bgImg)
+        self.food.clear(self.screen,self.bgImg)
+        self.head.clear(self.screen, self.bgImg)
 
         # These next lines call blit to draw each sprite on the screen
         self.sprites.draw(self.screen)
+        self.food.draw(self.screen)
+        self.head.draw(self.screen)
 
         # Since double buffering is used, the flip method
         # switches the displayed buffer and the drawing buffer.
@@ -129,8 +170,12 @@ class App:
     def on_execute(self):
         if not self.on_init():
             self._running = False
-
+        clock = pygame.time.Clock()
+        pygame.mixer.init()
+        pygame.mixer.music.load("backgroundmusic.mp3")
+        pygame.mixer.music.play(-1,0.0)
         while(self.running):
+            clock.tick(30)
             # The following get method call is a non-blocking
             # call that gets an event if one is ready. Otherwise
             # it drops through the for loop.
@@ -154,7 +199,9 @@ class App:
                 elif event.key == pygame.K_RIGHT:
                     self.snake.changeDir("RIGHT")  
                 elif event.key == pygame.K_SPACE:
+                    segment = Segment()
                     self.snake.addSeg(segment)
+                    self.sprites.add(segment)   
                     
 
 
