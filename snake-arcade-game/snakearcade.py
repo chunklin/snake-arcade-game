@@ -13,6 +13,7 @@ class Snake:
         self.dx = dx
         self.dy = dy
         self.isAlive = True
+        self.startTime = 0
     
     def move(self): 
         #starting from the last segment, they replace the one in front
@@ -105,21 +106,43 @@ class App:
         self.running = True
         self.screen = None
         self.size = self.width, self.height = 900,900
-
+        self.scoreNum = 0
+        self.font = None
+        self.startTime = 0
+    
+                 
 
     def on_init(self):
         # The following lines are needed for any pygame.
+        self.startTime = pygame.time.get_ticks()
         pygame.init()
         self.screen = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
         self.running = True
-
+        self.font = pygame.font.SysFont(None, 30) # Text
         # A surface is a solid colored box. In this case it is green.
         self.bgImg = pygame.Surface((900,900))
         self.bgImg.fill((184, 151, 118))
         # blit displays it on the screen (actually in the buffer).
         self.screen.blit(self.bgImg,(0,0))
-        pygame.display.set_caption("Snake Arcade")
-
+        pygame.display.set_caption("Snake Arcade") 
+        startMes = self.font.render("Snake Arcade", True, (0, 128, 0))
+        playMes = self.font.render("Play? Y/N", True, (0, 128, 0))
+        
+        self.screen.fill((184, 151, 118))
+        self.screen.blit(startMes,(380,340))
+        self.screen.blit(playMes,(380+12,340+40))
+        pygame.display.flip()
+        pygame.display.update()
+        menu = True
+        while(menu):
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_n:
+                        self.running = False
+                        menu = False
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_y:
+                        menu = False
+                        
+        
         # self.sprites is a RenderUpdates group. A group is a group of sprites. Groups
         # provide the ability to draw sprites on the screen and other management of
         # sprites.
@@ -138,18 +161,38 @@ class App:
         self.food.add(food)        
         
         return True
-    
+    def endGame(self):       
+        endMes = self.font.render("Game Over", True, (0, 128, 0))
+        conMes = self.font.render("Play again? Y/N", True, (0, 128, 0))
+                
+                
+        self.screen.blit(endMes,(320,240))
+        self.screen.blit(conMes,(320+12,240+40))
+        pygame.display.flip()
+        pygame.display.update()
+        endgame = True
+        while(endgame):
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_n:
+                        sys.exit()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_y:
+                        theApp = App()
+                        theApp.on_execute()
+                        sys.exit()
+                        
     def on_loop(self):
         # The on_loop is called below in the on_execute. This handles the changes
         # to the model of this program. It does not do any drawing.
         if(self.snake.isAlive):
             self.snake.move()
             if self.snake.segments[0].rect.x>900 or self.snake.segments[0].rect.x <0 or self.snake.segments[0].rect.y >900 or self.snake.segments[0].rect.y < 0:
-                self.snake.killSnake()           
+                self.snake.killSnake()
+                self.endGame()
             colliding = pygame.sprite.spritecollideany(self.snake.segments[0], self.sprites)
             
             if colliding != self.snake.segments[0] and colliding != None:
                 self.snake.killSnake()
+                self.endGame()
             colliding = pygame.sprite.spritecollideany(self.snake.segments[0], self.food)
             if colliding != None:
                 colliding.kill()
@@ -160,6 +203,7 @@ class App:
                 food = Food()
                 food.spawnfood()
                 self.food.add(food)
+                self.scoreNum += 10     
             
             
     
@@ -171,15 +215,32 @@ class App:
         self.sprites.clear(self.screen,self.bgImg)
         self.food.clear(self.screen,self.bgImg)
         self.head.clear(self.screen, self.bgImg)
+        self.screen.fill((184, 151, 118))
 
         # These next lines call blit to draw each sprite on the screen
         self.sprites.draw(self.screen)
         self.food.draw(self.screen)
         self.head.draw(self.screen)
-
+        
+        score = self.font.render("Score: ", True, (0, 128, 0)) 
+        time = self.font.render("Time: ", True, (0, 128, 0)) # Text and time          
         # Since double buffering is used, the flip method
         # switches the displayed buffer and the drawing buffer.
+        
+        gameTime = pygame.time.get_ticks() - self.startTime
+               
+        timeNum = self.font.render(str(gameTime/1000), True, (0, 128, 0)) # Text and time
+    
+        scoreTotal = self.font.render(str(self.scoreNum), True, (0, 128, 0)) # Text and score
+    
+        
+        self.screen.blit(score, (700,10)) # Text and score
+        self.screen.blit(time, (700,30)) # Text and time
+        self.screen.blit(timeNum, (770,30)) # Text and time
+        self.screen.blit(scoreTotal, (770, 10)) # Text and score
         pygame.display.flip()
+        pygame.display.update()           
+        
 
     def on_cleanup(self):
         pygame.quit()
@@ -187,7 +248,7 @@ class App:
     def on_execute(self):
         if not self.on_init():
             self._running = False
-        clock = pygame.time.Clock()
+        clock = pygame.time.Clock()   
         pygame.mixer.init()
         pygame.mixer.music.load("backgroundmusic.mp3")
         pygame.mixer.music.play(-1,0.0)
@@ -214,7 +275,9 @@ class App:
                 elif event.key == pygame.K_LEFT:
                     self.snake.changeDir("LEFT")
                 elif event.key == pygame.K_RIGHT:
-                    self.snake.changeDir("RIGHT")   
+                    self.snake.changeDir("RIGHT")  
+                    
+    
                     
 if __name__ == "__main__" :
     theApp = App()
