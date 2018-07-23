@@ -9,7 +9,7 @@ screen_w = 640
 screen_h = 480
 screen = pygame.display.set_mode([screen_w, screen_h])
 clock = pygame.time.Clock() # Time
-#done = False
+done = False
 screen.fill((255, 255, 255))
 
 
@@ -17,21 +17,30 @@ def main():
         
         done = False
         
+        startMes = font.render("Snake Arcade", True, (0, 128, 0))
+        playMes = font.render("Play? Y/N", True, (0, 128, 0))
+                
+        
+        screen.blit(startMes,(320,240))
+        screen.blit(playMes,(320+12,240+40))
+        pygame.display.flip()
+        pygame.display.update()
+                
         while not done:
                 for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                                done = True
+                                sys.exit()
+                        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                                done = True
+                                sys.exit()
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_n:
                                 done = True
+                                sys.exit()
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_y:
                                 start()
                                 
-                startMes = font.render("Snake Arcade", True, (0, 128, 0))
-                playMes = font.render("Play? Y/N", True, (0, 128, 0))
-                
-                screen.fill((255, 255, 255))
-                screen.blit(startMes,(320,240))
-                screen.blit(playMes,(320+12,240+40))
-                pygame.display.flip()
-                pygame.display.update()                
+                             
                                 
 def start():
         
@@ -48,8 +57,10 @@ def start():
                 for event in pygame.event.get():
                         if event.type == pygame.QUIT:
                                 done = True
+                                sys.exit()
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                                 done = True
+                                sys.exit()
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                                 scoreNum += 10 # score
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
@@ -85,14 +96,16 @@ def endGame():
                 
         while not done:
                 for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                                done = True
+                                sys.exit()
+                        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                                done = True
+                                sys.exit()
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_n:
                                 done = True
+                                sys.exit()
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_y:
                                 start()
-                                
-                      
-        
-        
-
-            
+                                            
 main()           
