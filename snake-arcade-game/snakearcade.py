@@ -100,17 +100,29 @@ class Food(pygame.sprite.Sprite):
         self.originalImage = self.image
         self.rect.x = 0
         self.rect.y = 0 
+        self.direction = ("x",5)
+        self.dirs = [("x",5),("x",-5),("y",5),("y",-5)]
     
     def spawnfood(self):
         #spawns food in a randomly determined coordinate
         self.rect.x = random.uniform(10,890)
         self.rect.y = random.uniform(10,890)
+        self.direction = random.choice(self.dirs)
+    
+    def move(self, xy, velocity):
+        if xy == "x":
+            self.rect.x += velocity
+        elif xy == "y":
+            self.rect.y += velocity
 
 class Rock(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.image = pygame.image.load("rock1.png")
         self.rect = self.image.get_rect()
+        self.originalImage = self.image
+        self.rect.x = 0
+        self.rect.y = 0         
     def spawnrock(self):
         onsnake = True
         xvar = 0
@@ -122,7 +134,23 @@ class Rock(pygame.sprite.Sprite):
                 onsnake = False
         self.rect.x = xvar
         self.rect.y = yvar
-            
+
+class Powerup(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.image.load("powerup.png")
+        self.rect = self.image.get_rect()
+        self.originalImage = self.image
+        self.rect.x = 0
+        self.rect.y = 0
+        self.powerups = ["rockeater", "shedskin", "slowmo", "speedboost", "poison shoot"]
+        
+    def spawnpowerup(self):
+        self.rect.x = random.uniform(10,890)
+        self.rect.y = random.uniform(10,890)        
+
+        
+
 class App:
     def __init__(self):
         
@@ -133,6 +161,7 @@ class App:
         self.font = None
         self.startTime = 0
         self.FPS = 20
+        self.foodcounter = 0
 
     def on_init(self):
         # The following lines are needed for any pygame.
@@ -177,6 +206,7 @@ class App:
         # provide the ability to draw sprites on the screen and other management of
         # sprites.
         self.sprites = pygame.sprite.RenderUpdates()
+        self.powerups = pygame.sprite.RenderUpdates()
         self.head = pygame.sprite.RenderUpdates()
         self.food = pygame.sprite.RenderUpdates()
         self.rock = pygame.sprite.RenderUpdates()
@@ -194,8 +224,12 @@ class App:
         food.spawnfood()
         self.food.add(food)        
         
-        #creates or spawns rocks
+        #creates powerup object and spawns a powerup sprite on the screen
+        powerup = Powerup()
+        powerup.spawnpowerup()
+        self.powerups.add(powerup)
         
+        #creates or spawns rocks
         for i in range(10):
             rock = Rock()
             rock.spawnrock()
@@ -238,6 +272,13 @@ class App:
             #moves the snake
             self.snake.move()
             
+            #moves the food
+            for food in self.food:
+                if self.foodcounter%20 == 0:
+                    food.direction = random.choice(food.dirs)
+                self.foodcounter+= 1
+                food.move(food.direction[0], food.direction[1])
+            
             #kills snake if out of bounds or colliding with another segment
             if self.snake.segments[0].rect.x>900 or self.snake.segments[0].rect.x <0 or self.snake.segments[0].rect.y >900 or self.snake.segments[0].rect.y < 0:
                 self.snake.killSnake()
@@ -246,6 +287,16 @@ class App:
             if colliding != self.snake.segments[0] and colliding != None:
                 self.snake.killSnake()
                 self.endGame()
+            
+            #kills food if it goes out of bounds
+            for food in self.food:
+                if food.rect.x>900 or food.rect.x<0 or food.rect.y>900 or food.rect.y<0:
+                    eatsound = pygame.mixer.Sound("squeak.wav")
+                    eatsound.play()                      
+                    food.kill()
+                    newfood = Food()
+                    newfood.spawnfood()
+                    self.food.add(newfood)
             
             #checking for collisions with rocks
             colliding = pygame.sprite.spritecollideany(self.snake.segments[0], self.rock)
@@ -256,7 +307,7 @@ class App:
             #checks if player is colliding with food and awards food/segments
             colliding = pygame.sprite.spritecollideany(self.snake.segments[0], self.food)
             if colliding != None:
-                eatsound = pygame.mixer.Sound("eat.wav")
+                eatsound = pygame.mixer.Sound("squeak.wav")
                 eatsound.play()                
                 colliding.kill()
                 for i in range(5):
@@ -266,10 +317,7 @@ class App:
                 food = Food()
                 food.spawnfood()
                 self.food.add(food)
-                self.scoreNum += 10
-            
-            
-            
+                self.scoreNum += 5
     
     def on_render(self):
         # The on_render is responsible for rendering or drawing the
@@ -277,6 +325,7 @@ class App:
         # These next lines clear each sprite from the screen by redrawing
         # the background behind that sprite.
         self.sprites.clear(self.screen,self.bgImg)
+        self.powerups.clear
         self.food.clear(self.screen,self.bgImg)
         self.head.clear(self.screen, self.bgImg)
         self.rock.clear(self.screen, self.bgImg)
@@ -288,6 +337,7 @@ class App:
         self.rock.draw(self.screen)
         self.head.draw(self.screen)
         self.sprites.draw(self.screen)
+        self.powerups.draw(self.screen)
         self.food.draw(self.screen)
         
         score = self.font.render("Score: ", True, (0, 128, 0)) 
