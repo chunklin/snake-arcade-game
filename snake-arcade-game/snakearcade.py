@@ -1,10 +1,10 @@
 import sys,os,pygame,random,math,numpy,pygame.time
 #Globals
-speed = 15
 size = 15
-spacing = 2
 KEY = {"UP":1,"DOWN":2,"LEFT":3,"RIGHT":4}
-
+separation = 2
+speed = 15
+frames = 20
 class Snake:
     def __init__(self,x,y,dx,dy):
         self.segments = []
@@ -14,6 +14,8 @@ class Snake:
         self.dy = dy
         self.isAlive = True
         self.startTime = 0
+        self.poweredup = False
+        self.rockeater = False
     
     def move(self): 
         #starting from the last segment, they replace the one in front
@@ -143,12 +145,18 @@ class Powerup(pygame.sprite.Sprite):
         self.originalImage = self.image
         self.rect.x = 0
         self.rect.y = 0
-        self.powerups = ["rockeater", "shedskin", "slowmo", "speedboost", "poison shoot"]
+        self.powerups = ["slowmo","speedboost","shedskin", "rockeater"]
+        self.power = ""
         
     def spawnpowerup(self):
         self.rect.x = random.uniform(10,890)
         self.rect.y = random.uniform(10,890)        
-
+    
+    def powerused(self):
+        self.power = random.choice(self.powerups)
+        return self.power
+            
+        
         
 
 class App:
@@ -159,9 +167,11 @@ class App:
         self.size = self.width, self.height = 900,900
         self.scoreNum = 0
         self.font = None
-        self.startTime = 0
         self.FPS = 20
+        self.startTime = 0
         self.foodcounter = 0
+        self.powerupcd = 0
+        self.powerupexists = False
 
     def on_init(self):
         # The following lines are needed for any pygame.
@@ -223,12 +233,7 @@ class App:
         food = Food()
         food.spawnfood()
         self.food.add(food)        
-        
-        #creates powerup object and spawns a powerup sprite on the screen
-        powerup = Powerup()
-        powerup.spawnpowerup()
-        self.powerups.add(powerup)
-        
+            
         #creates or spawns rocks
         for i in range(10):
             rock = Rock()
@@ -301,8 +306,11 @@ class App:
             #checking for collisions with rocks
             colliding = pygame.sprite.spritecollideany(self.snake.segments[0], self.rock)
             if not colliding == None:
-                self.snake.killSnake()
-                self.endGame()
+                if(self.snake.rockeater == True):
+                    colliding.kill()
+                else:
+                    self.snake.killSnake()
+                    self.endGame()
             
             #checks if player is colliding with food and awards food/segments
             colliding = pygame.sprite.spritecollideany(self.snake.segments[0], self.food)
@@ -318,6 +326,59 @@ class App:
                 food.spawnfood()
                 self.food.add(food)
                 self.scoreNum += 5
+                if(self.powerupexists == False):
+                    self.powerupcd +=1
+            #checks if player collides with a powerup and powers the snake up   
+            colliding = pygame.sprite.spritecollideany(self.snake.segments[0], self.powerups)
+            if colliding != None:
+                eatsound = pygame.mixer.Sound("hitnoise.wav")
+                eatsound.play()   
+                power = colliding.powerused()
+                if(power == "slowmo"):
+                    self.FPS = 40
+                    pygame.time.set_timer(pygame.USEREVENT+1, 5000)
+                    self.snake.poweredup = True
+                elif(power == "speedboost"):
+                    self.FPS = 10
+                    pygame.time.set_timer(pygame.USEREVENT+1, 5000) 
+                    self.snake.poweredup = True
+                elif(power == "shedskin"):
+                    removelist = []
+                    for i in range(len(self.snake.segments)-1, len(self.snake.segments)-11, -1):
+                        if(i == 0):
+                            break
+                        else:
+                            self.snake.segments[i].kill()
+                            removelist.append(self.snake.segments[i])
+                    for segment in removelist:
+                        self.snake.segments.remove(segment)
+                elif(power == "rockeater"):
+                    self.snake.rockeater = True
+                    self.snake.segments[0].image = pygame.image.load("rock2.png")
+                    pygame.time.set_timer(pygame.USEREVENT+2, 5000)
+                self.scoreNum += 10
+                colliding.kill()
+                self.powerupexists = False
+                print("powerupkilled")
+                                  
+            if (self.powerupexists != True) and (self.powerupcd >= 2):
+                self.powerupcd = 0
+                self.powerupexists = True
+                print("here")
+                powerup = Powerup()
+                powerup.spawnpowerup()
+                self.powerups.add(powerup)
+                colliding = pygame.sprite.spritecollideany(powerup, self.rock)
+                spawned = False
+                while(spawned == False):
+                    if colliding != None:
+                        powerup.kill()
+                        powerup = Powerup()
+                        powerup.spawnpowerup()
+                        self.powerups.add(powerup) 
+                        colliding = pygame.sprite.spritecollideany(powerup, self.rock)
+                    else:
+                        spawned = True                       
     
     def on_render(self):
         # The on_render is responsible for rendering or drawing the
@@ -385,6 +446,11 @@ class App:
             # This is an event processing function that is called with an event when it occurs.
             if event.type == pygame.QUIT:
                 self.running = False
+            elif event.type == pygame.USEREVENT+1:
+                self.FPS = 20
+            elif event.type == pygame.USEREVENT+2:
+                self.snake.rockeater = False
+                self.snake.segments[0].image = pygame.image.load("redblock.png")
             elif event.type == pygame.KEYDOWN:  
                 if event.key == pygame.K_UP:
                     self.snake.changeDir("UP")
@@ -393,7 +459,8 @@ class App:
                 elif event.key == pygame.K_LEFT:
                     self.snake.changeDir("LEFT")
                 elif event.key == pygame.K_RIGHT:
-                    self.snake.changeDir("RIGHT")  
+                    self.snake.changeDir("RIGHT")
+                    
                     
     
                     
