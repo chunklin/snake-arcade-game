@@ -18,6 +18,7 @@ class Snake:
         self.boosted = False
         self.slowed = False
         self.rockeater = False
+        self.ghost = False
     
     def move(self): 
         #starting from the last segment, they replace the one in front
@@ -82,6 +83,8 @@ class Snake:
             segment.image = pygame.image.load("speed2.png") 
         elif(self.slowed):
             segment.image = pygame.image.load("slow.png")
+        elif(self.ghost):
+            segment.image = pygame.image.load("ghost.png")
     
     def killSnake(self):
         #systematically kills all segments in the snake
@@ -155,7 +158,7 @@ class Powerup(pygame.sprite.Sprite):
         self.originalImage = self.image
         self.rect.x = 0
         self.rect.y = 0
-        self.powerups = ["slowmo","speedboost","shedskin", "rockeater"]
+        self.powerups = ["slowmo","speedboost","shedskin", "rockeater", "ghost"]
         self.power = ""
         
     def spawnpowerup(self):
@@ -299,7 +302,7 @@ class App:
                 self.snake.killSnake()
                 self.endGame()
             colliding = pygame.sprite.spritecollideany(self.snake.segments[0], self.sprites)
-            if colliding != self.snake.segments[0] and colliding != None:
+            if colliding != self.snake.segments[0] and colliding != None and self.snake.ghost == False:
                 self.snake.killSnake()             
                 self.endGame()
             
@@ -360,7 +363,7 @@ class App:
                     self.snake.boosted = True
                 elif(power == "shedskin"):
                     removelist = []
-                    for i in range(len(self.snake.segments)-1, len(self.snake.segments)-20, -1):
+                    for i in range(len(self.snake.segments)-1, len(self.snake.segments)-21, -1):
                         if(i == 0):
                             break
                         else:
@@ -374,8 +377,12 @@ class App:
                         if segment != self.snake.segments[0]:
                             segment.image = pygame.image.load("rock2.png")
                     pygame.time.set_timer(pygame.USEREVENT+1, 5000)
-                    self.snake.rockeater = True
-                
+                elif(power == "ghost"):
+                    self.snake.ghost = True
+                    for segment in self.snake.segments:
+                        if segment != self.snake.segments[0]:
+                            segment.image = pygame.image.load("ghost.png")
+                    pygame.time.set_timer(pygame.USEREVENT+1, 5000)
                 #adds score and kills the powerup
                 self.scoreNum += 10
                 colliding.kill()
@@ -480,6 +487,7 @@ class App:
                 self.snake.rockeater = False
                 self.snake.slowed = False
                 self.snake.boosted = False
+                self.snake.ghost = False
                 for segment in self.snake.segments:
                     if segment != self.snake.segments[0]:
                         segment.image = pygame.image.load("greenblock.png")
