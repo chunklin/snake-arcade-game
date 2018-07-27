@@ -5,6 +5,7 @@ KEY = {"UP":1,"DOWN":2,"LEFT":3,"RIGHT":4}
 separation = 2
 speed = 15
 frames = 20
+highscore = 0
 class Snake:
     def __init__(self,x,y,dx,dy):
         self.segments = []
@@ -14,7 +15,8 @@ class Snake:
         self.dy = dy
         self.isAlive = True
         self.startTime = 0
-        self.poweredup = False
+        self.boosted = False
+        self.slowed = False
         self.rockeater = False
     
     def move(self): 
@@ -72,6 +74,14 @@ class Snake:
             segment.rect.x = self.segments[-1].rect.x
             segment.rect.y = self.segments[-1].rect.y
             self.segments.append(segment)
+            
+        #assigns correct image for each powerup
+        if(self.rockeater):
+            segment.image = pygame.image.load("rock2.png") 
+        elif(self.boosted):
+            segment.image = pygame.image.load("speed2.png") 
+        elif(self.slowed):
+            segment.image = pygame.image.load("slow.png")
     
     def killSnake(self):
         #systematically kills all segments in the snake
@@ -235,7 +245,7 @@ class App:
         self.food.add(food)        
             
         #creates or spawns rocks
-        for i in range(10):
+        for i in range(8):
             rock = Rock()
             rock.spawnrock()
             self.rock.add(rock)
@@ -245,7 +255,7 @@ class App:
         #plays deathsound and pauses music
         deathsound = pygame.mixer.Sound("death.wav")
         deathsound.play()
-        pygame.mixer.music.stop()
+        pygame.mixer.music.stop()          
         
         #defines endgame text
         endMes = self.font.render("Game Over", True, (0, 128, 0))
@@ -256,7 +266,7 @@ class App:
         self.screen.blit(conMes,(320+12,240+40))
         pygame.display.flip()
         pygame.display.update()
-        
+    
         #asks the user whether they want to continue or end the game
         endgame = True
         while(endgame):
@@ -290,7 +300,7 @@ class App:
                 self.endGame()
             colliding = pygame.sprite.spritecollideany(self.snake.segments[0], self.sprites)
             if colliding != self.snake.segments[0] and colliding != None:
-                self.snake.killSnake()
+                self.snake.killSnake()             
                 self.endGame()
             
             #kills food if it goes out of bounds
@@ -309,7 +319,7 @@ class App:
                 if(self.snake.rockeater == True):
                     colliding.kill()
                 else:
-                    self.snake.killSnake()
+                    self.snake.killSnake()                 
                     self.endGame()
             
             #checks if player is colliding with food and awards food/segments
@@ -335,16 +345,22 @@ class App:
                 eatsound.play()   
                 power = colliding.powerused()
                 if(power == "slowmo"):
-                    self.FPS = 40
-                    pygame.time.set_timer(pygame.USEREVENT+1, 5000)
-                    self.snake.poweredup = True
-                elif(power == "speedboost"):
                     self.FPS = 10
+                    for segment in self.snake.segments:
+                        if segment != self.snake.segments[0]:
+                            segment.image = pygame.image.load("slow.png")
+                    pygame.time.set_timer(pygame.USEREVENT+1, 5000)
+                    self.snake.slowed = True
+                elif(power == "speedboost"):
+                    self.FPS = 40
+                    for segment in self.snake.segments:
+                        if segment != self.snake.segments[0]:
+                            segment.image = pygame.image.load("speed2.png")
                     pygame.time.set_timer(pygame.USEREVENT+1, 5000) 
-                    self.snake.poweredup = True
+                    self.snake.boosted = True
                 elif(power == "shedskin"):
                     removelist = []
-                    for i in range(len(self.snake.segments)-1, len(self.snake.segments)-11, -1):
+                    for i in range(len(self.snake.segments)-1, len(self.snake.segments)-20, -1):
                         if(i == 0):
                             break
                         else:
@@ -354,17 +370,20 @@ class App:
                         self.snake.segments.remove(segment)
                 elif(power == "rockeater"):
                     self.snake.rockeater = True
-                    self.snake.segments[0].image = pygame.image.load("rock2.png")
-                    pygame.time.set_timer(pygame.USEREVENT+2, 5000)
+                    for segment in self.snake.segments:
+                        if segment != self.snake.segments[0]:
+                            segment.image = pygame.image.load("rock2.png")
+                    pygame.time.set_timer(pygame.USEREVENT+1, 5000)
+                    self.snake.rockeater = True
+                
+                #adds score and kills the powerup
                 self.scoreNum += 10
                 colliding.kill()
                 self.powerupexists = False
-                print("powerupkilled")
                                   
             if (self.powerupexists != True) and (self.powerupcd >= 2):
                 self.powerupcd = 0
                 self.powerupexists = True
-                print("here")
                 powerup = Powerup()
                 powerup.spawnpowerup()
                 self.powerups.add(powerup)
@@ -378,7 +397,12 @@ class App:
                         self.powerups.add(powerup) 
                         colliding = pygame.sprite.spritecollideany(powerup, self.rock)
                     else:
-                        spawned = True                       
+                        spawned = True     
+                        
+            #updates highscore
+            global highscore
+            if self.scoreNum > highscore:
+                highscore = self.scoreNum             
     
     def on_render(self):
         # The on_render is responsible for rendering or drawing the
@@ -403,6 +427,7 @@ class App:
         
         score = self.font.render("Score: ", True, (0, 128, 0)) 
         time = self.font.render("Time: ", True, (0, 128, 0)) # Text and time          
+        hiscore = self.font.render("High Score: ", True, (0,128,0))
         # Since double buffering is used, the flip method
         # switches the displayed buffer and the drawing buffer.
         
@@ -411,12 +436,16 @@ class App:
         timeNum = self.font.render(str(gameTime/1000), True, (0, 128, 0)) # Text and time
     
         scoreTotal = self.font.render(str(self.scoreNum), True, (0, 128, 0)) # Text and score
+        
+        hiscorenum = self.font.render(str(highscore), True, (0,128,0))
     
         
         self.screen.blit(score, (700,10)) # Text and score
         self.screen.blit(time, (700,30)) # Text and time
         self.screen.blit(timeNum, (770,30)) # Text and time
         self.screen.blit(scoreTotal, (770, 10)) # Text and score
+        self.screen.blit(hiscore,(700,50))
+        self.screen.blit(hiscorenum,(820,50))
         pygame.display.flip()
         pygame.display.update()           
         
@@ -448,9 +477,12 @@ class App:
                 self.running = False
             elif event.type == pygame.USEREVENT+1:
                 self.FPS = 20
-            elif event.type == pygame.USEREVENT+2:
                 self.snake.rockeater = False
-                self.snake.segments[0].image = pygame.image.load("redblock.png")
+                self.snake.slowed = False
+                self.snake.boosted = False
+                for segment in self.snake.segments:
+                    if segment != self.snake.segments[0]:
+                        segment.image = pygame.image.load("greenblock.png")
             elif event.type == pygame.KEYDOWN:  
                 if event.key == pygame.K_UP:
                     self.snake.changeDir("UP")
