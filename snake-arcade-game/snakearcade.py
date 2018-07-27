@@ -115,8 +115,8 @@ class Food(pygame.sprite.Sprite):
         self.originalImage = self.image
         self.rect.x = 0
         self.rect.y = 0 
-        self.direction = ("x",5)
-        self.dirs = [("x",5),("x",-5),("y",5),("y",-5)]
+        self.direction = ("x",2.5)
+        self.dirs = [("x",2.5),("x",-2.5),("y",2.5),("y",-2.5)]
     
     def spawnfood(self):
         #spawns food in a randomly determined coordinate
@@ -180,7 +180,7 @@ class App:
         self.size = self.width, self.height = 900,900
         self.scoreNum = 0
         self.font = None
-        self.FPS = 20
+        self.FPS = 15 
         self.startTime = 0
         self.foodcounter = 0
         self.powerupcd = 0
@@ -320,6 +320,8 @@ class App:
             colliding = pygame.sprite.spritecollideany(self.snake.segments[0], self.rock)
             if not colliding == None:
                 if(self.snake.rockeater == True):
+                    eatsound = pygame.mixer.Sound("hitnoise.wav")
+                    eatsound.play()                     
                     colliding.kill()
                 else:
                     self.snake.killSnake()                 
@@ -348,14 +350,14 @@ class App:
                 eatsound.play()   
                 power = colliding.powerused()
                 if(power == "slowmo"):
-                    self.FPS = 10
+                    self.FPS = 7.5
                     for segment in self.snake.segments:
                         if segment != self.snake.segments[0]:
                             segment.image = pygame.image.load("slow.png")
                     pygame.time.set_timer(pygame.USEREVENT+1, 5000)
                     self.snake.slowed = True
                 elif(power == "speedboost"):
-                    self.FPS = 40
+                    self.FPS = 30
                     for segment in self.snake.segments:
                         if segment != self.snake.segments[0]:
                             segment.image = pygame.image.load("speed2.png")
@@ -483,7 +485,7 @@ class App:
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.USEREVENT+1:
-                self.FPS = 20
+                self.FPS = 15
                 self.snake.rockeater = False
                 self.snake.slowed = False
                 self.snake.boosted = False
