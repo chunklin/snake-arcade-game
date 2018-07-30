@@ -305,6 +305,9 @@ class App:
             if colliding != self.snake.segments[0] and colliding != None and self.snake.ghost == False:
                 self.snake.killSnake()             
                 self.endGame()
+            elif colliding != self.snake.segments[0] and colliding != None and self.snake.ghost == True:
+                ghostsound = pygame.mixer.Sound("ghost.wav")
+                ghostsound.play()             
             
             #kills food if it goes out of bounds
             for food in self.food:
@@ -323,6 +326,9 @@ class App:
                     eatsound = pygame.mixer.Sound("hitnoise.wav")
                     eatsound.play()                     
                     colliding.kill()
+                elif(self.snake.ghost == True):
+                    ghostsound = pygame.mixer.Sound("ghost.wav")
+                    ghostsound.play()                 
                 else:
                     self.snake.killSnake()                 
                     self.endGame()
