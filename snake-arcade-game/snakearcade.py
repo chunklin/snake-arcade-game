@@ -185,6 +185,7 @@ class App:
         self.foodcounter = 0
         self.powerupcd = 0
         self.powerupexists = False
+        
 
     def on_init(self):
         # The following lines are needed for any pygame.
@@ -357,17 +358,21 @@ class App:
                 power = colliding.powerused()
                 if(power == "slowmo"):
                     self.FPS = 7.5
+                    ghostsound = pygame.mixer.Sound("ghost.wav")
+                    ghostsound.play()                     
                     for segment in self.snake.segments:
                         if segment != self.snake.segments[0]:
                             segment.image = pygame.image.load("slow.png")
-                    pygame.time.set_timer(pygame.USEREVENT+1, 5000)
+                    pygame.time.set_timer(pygame.USEREVENT+1, 2500)
                     self.snake.slowed = True
                 elif(power == "speedboost"):
                     self.FPS = 30
+                    ghostsound = pygame.mixer.Sound("ghost.wav")
+                    ghostsound.play()                     
                     for segment in self.snake.segments:
                         if segment != self.snake.segments[0]:
                             segment.image = pygame.image.load("speed2.png")
-                    pygame.time.set_timer(pygame.USEREVENT+1, 5000) 
+                    pygame.time.set_timer(pygame.USEREVENT+1, 10000) 
                     self.snake.boosted = True
                 elif(power == "shedskin"):
                     removelist = []
@@ -387,6 +392,8 @@ class App:
                     pygame.time.set_timer(pygame.USEREVENT+1, 5000)
                 elif(power == "ghost"):
                     self.snake.ghost = True
+                    ghostsound = pygame.mixer.Sound("ghost.wav")
+                    ghostsound.play()                    
                     for segment in self.snake.segments:
                         if segment != self.snake.segments[0]:
                             segment.image = pygame.image.load("ghost.png")
@@ -417,7 +424,7 @@ class App:
             #updates highscore
             global highscore
             if self.scoreNum > highscore:
-                highscore = self.scoreNum             
+                highscore = self.scoreNum           
     
     def on_render(self):
         # The on_render is responsible for rendering or drawing the
