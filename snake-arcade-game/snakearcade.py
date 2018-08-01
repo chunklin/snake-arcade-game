@@ -363,7 +363,7 @@ class App:
                     for segment in self.snake.segments:
                         if segment != self.snake.segments[0]:
                             segment.image = pygame.image.load("slow.png")
-                    pygame.time.set_timer(pygame.USEREVENT+1, 2500)
+                    pygame.time.set_timer(pygame.USEREVENT+1, 5000)
                     self.snake.slowed = True
                 elif(power == "speedboost"):
                     self.FPS = 30
@@ -372,7 +372,7 @@ class App:
                     for segment in self.snake.segments:
                         if segment != self.snake.segments[0]:
                             segment.image = pygame.image.load("speed2.png")
-                    pygame.time.set_timer(pygame.USEREVENT+1, 10000) 
+                    pygame.time.set_timer(pygame.USEREVENT+1, 5000) 
                     self.snake.boosted = True
                 elif(power == "shedskin"):
                     removelist = []
